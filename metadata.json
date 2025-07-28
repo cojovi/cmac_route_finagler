@@ -1,0 +1,6 @@
+{
+  "name": "Codys AI Route Finagler",
+  "description": "An AI-powered application that takes a list of 3-10 destinations and calculates the most time-efficient driving route, providing an ordered list of stops and a natural language summary of the trip.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
