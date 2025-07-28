@@ -7,10 +7,12 @@ import { RouteResult } from './components/RouteResult';
 import { AddressInput } from './components/AddressInput';
 import { LoadingSpinner } from './components/LoadingSpinner';
 
-const MIN_STOPS = 3;
+const MIN_STOPS = 2;
 const MAX_STOPS = 10;
 
 export default function App() {
+  const [departureLocation, setDepartureLocation] = useState<string>('');
+  const [departureTime, setDepartureTime] = useState<string>('09:00');
   const [addresses, setAddresses] = useState<Address[]>(() =>
     Array.from({ length: MIN_STOPS }, (_, i) => ({ id: Date.now() + i, value: '', time: '', duration: '30' }))
   );
@@ -47,13 +49,17 @@ export default function App() {
       }
       return prev;
     });
-    setTimedStopId(prevId => (prevId === id ? null : prevId));
   }, [timedStopId]);
 
   const handleOptimize = async () => {
+    if (!departureLocation.trim()) {
+      setError('Please enter a departure location.');
+      return;
+    }
+
     const validAddresses = addresses.map(a => a.value.trim()).filter(Boolean);
     if (validAddresses.length < MIN_STOPS) {
-      setError(`Please enter at least ${MIN_STOPS} valid addresses to optimize.`);
+      setError(`Please enter at least ${MIN_STOPS} destinations to optimize.`);
       return;
     }
     
@@ -66,13 +72,12 @@ export default function App() {
         }
     }
 
-
     setIsLoading(true);
     setError(null);
     setOptimizedRoute(null);
 
     try {
-      const result = await optimizeRoute(addresses, timedStopId);
+      const result = await optimizeRoute(departureLocation, departureTime, addresses, timedStopId);
       setOptimizedRoute(result);
     } catch (err) {
       console.error(err);
@@ -90,7 +95,7 @@ export default function App() {
             Codys AI Route Finagler
           </h1>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Enter your destinations, set a timed appointment if needed, and let AI find the most efficient route.
+            Enter your departure details and destinations, and let AI find the most efficient round trip.
           </p>
         </header>
 
@@ -99,8 +104,43 @@ export default function App() {
           <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-gray-700">
             <h2 className="text-2xl font-bold mb-4 text-cyan-300 flex items-center">
               <MapPinIcon className="w-6 h-6 mr-2" />
-              Enter Your Stops
+              Plan Your Route
             </h2>
+
+            {/* Departure Section */}
+            <div className="mb-6 p-4 bg-gray-700/40 rounded-lg border border-gray-600">
+                <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+                    <div className="flex-grow min-w-[200px]">
+                        <label htmlFor="departure-location" className="block text-sm font-medium text-gray-300 mb-1">
+                            Where are you departing from?
+                        </label>
+                        <input
+                            id="departure-location"
+                            type="text"
+                            value={departureLocation}
+                            onChange={(e) => setDepartureLocation(e.target.value)}
+                            placeholder="Enter starting address"
+                            className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="departure-time" className="block text-sm font-medium text-gray-300 mb-1">
+                            Hit the road at...
+                        </label>
+                        <input
+                            id="departure-time"
+                            type="time"
+                            value={departureTime}
+                            onChange={(e) => setDepartureTime(e.target.value)}
+                            className="w-full px-3 py-2 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <h3 className="text-xl font-bold mb-3 text-cyan-300">
+                Your Destinations
+            </h3>
             <div className="space-y-3 mb-6">
               {addresses.map((address, index) => (
                 <AddressInput

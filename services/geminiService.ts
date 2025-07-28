@@ -13,7 +13,7 @@ const routeSchema = {
     properties: {
         optimized_route: {
             type: Type.ARRAY,
-            description: "The list of stops in the most optimal order. Each item should be an object containing the address, estimated arrival time, and estimated departure time. The route should be a round trip, starting and ending at the first address.",
+            description: "The list of stops in the most optimal order. Each item should be an object containing the address, estimated arrival time, and estimated departure time. The route should be a round trip, starting and ending at the departure location.",
             items: {
                 type: Type.OBJECT,
                 properties: {
@@ -41,7 +41,7 @@ const routeSchema = {
 };
 
 
-export const optimizeRoute = async (addresses: Address[], timedStopId: number | null): Promise<OptimizedRoute> => {
+export const optimizeRoute = async (departureLocation: string, departureTime: string, addresses: Address[], timedStopId: number | null): Promise<OptimizedRoute> => {
     
     let timeConstraintPrompt = '';
     if (timedStopId !== null) {
@@ -54,18 +54,23 @@ export const optimizeRoute = async (addresses: Address[], timedStopId: number | 
     }
 
     const prompt = `
-        You are a logistics expert specializing in route optimization. Your task is to solve the Traveling Salesperson Problem for the given list of addresses, considering the time spent at each stop.
-        The user wants the most time-efficient route starting from the first address in the list, visiting all other addresses, and returning to the start.
+        You are a logistics expert specializing in route optimization. Your task is to solve the Traveling Salesperson Problem for a given start point and a list of destinations, considering the time spent at each stop.
+        The user wants the most time-efficient round trip.
+
+        The route MUST start at "${departureLocation}" at approximately ${departureTime}.
+        The route MUST visit all of the destinations listed below.
+        The route MUST end back at the starting location: "${departureLocation}".
+
         You must account for the "dwell time" (time spent at each location) in your calculations for total trip time and arrival/departure estimates.
         ${timeConstraintPrompt}
         
         Please provide the following:
-        1.  The optimal order of the stops, including estimated arrival and departure times for each. The first address should be the start and end point of the trip.
+        1.  The optimal order of the stops, including estimated arrival and departure times for each. The route must be a round trip, starting and ending at "${departureLocation}".
         2.  The total estimated driving distance.
         3.  The total estimated trip duration, which includes both driving time AND time spent at all stops.
         4.  A brief, helpful summary of the optimized trip, acknowledging any time constraints if provided.
 
-        Here is the list of stops to optimize, with the planned duration at each stop:
+        Here is the list of destinations to visit, with the planned duration at each stop:
         ${addresses.map((addr, i) => `${i + 1}. ${addr.value} (Time to spend: ${addr.duration} minutes)`).join('\n')}
 
         Return your answer ONLY in a valid JSON format that adheres to the provided schema. Do not include any other text or explanations outside of the JSON object.
